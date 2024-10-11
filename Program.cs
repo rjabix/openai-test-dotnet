@@ -2,38 +2,41 @@ using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using test_dotnet.Context;
 using Pgvector.EntityFrameworkCore;
+using test_dotnet.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-
 builder.Services.AddControllers();
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAllOrigins",
-        builder =>
-        {
-            builder.AllowAnyOrigin()
-                   .AllowAnyHeader()
-                   .AllowAnyMethod();
-        });
+    options.AddPolicy("AllowAllOrigins", policyBuilder =>
+    {
+        policyBuilder.AllowAnyOrigin()
+                     .AllowAnyHeader()
+                     .AllowAnyMethod();
+    });
 });
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddDbContextPool<JobsDbContext>(opt =>
-    opt.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
-var dataSourceBuilder = new NpgsqlDataSourceBuilder(builder.Configuration.GetConnectionString("DefaultConnection"));
+// Налаштовуємо pgvector
+var dataSourceBuilder = new NpgsqlDataSourceBuilder(connectionString);
 dataSourceBuilder.UseVector();
 var dataSource = dataSourceBuilder.Build();
 
-builder.Services.AddDbContext<DbContext>(options =>
-    options.UseNpgsql(dataSource, x =>
+// Реєструємо JobsDbContext з підтримкою pgvector
+builder.Services.AddDbContext<JobsDbContext>(options =>
+    options.UseNpgsql(dataSource, npgsqlOptions =>
     {
-        x.UseVector();
-    }));
+        npgsqlOptions.UseVector();
+    })
+);
+
+// Реєструємо сервіс EmbeddingService
+builder.Services.AddScoped<EmbeddingService>();
 
 var app = builder.Build();
 
@@ -45,12 +48,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
-
 app.UseCors("AllowAllOrigins");
-
 app.UseAuthorization();
-
 app.MapControllers();
-
 app.Run();

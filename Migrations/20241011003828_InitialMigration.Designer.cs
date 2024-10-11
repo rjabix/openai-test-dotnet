@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
+using Pgvector;
 using test_dotnet.Context;
 
 #nullable disable
@@ -11,8 +12,8 @@ using test_dotnet.Context;
 namespace test_dotnet.Migrations
 {
     [DbContext(typeof(JobsDbContext))]
-    [Migration("20241010215814_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20241011003828_InitialMigration")]
+    partial class InitialMigration
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -33,20 +34,19 @@ namespace test_dotnet.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("Category")
-                        .HasColumnType("integer");
-
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("Status")
+                    b.Property<Vector>("DescriptionEmbedding")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("vector(1536)")
+                        .HasColumnName("description_embedding");
 
                     b.Property<string>("Title")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("title");
 
                     b.HasKey("Id");
 

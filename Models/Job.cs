@@ -1,7 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
-using System.Numerics;
 using test_dotnet.Services;
+using Pgvector.EntityFrameworkCore;
+using Pgvector;
 
 namespace test_dotnet.Models
 {
@@ -17,9 +18,9 @@ namespace test_dotnet.Models
 
         [Column("description_embedding", TypeName = "vector(1536)")]
         [Required]
-        public Vector<float>? DescriptionEmbedding { get; set; }
+        public Vector? DescriptionEmbedding { get; set; }
 
-        public async Task<Job> CreateJobAsync(EmbeddingService service, string title, string description)
+        public static async Task<Job> CreateJobAsync(EmbeddingService service, string title, string description)
         {
             var descriptionEmbedding = await service.GetEmbeddingAsync(description);
             return new Job { Title = title, Description = description, DescriptionEmbedding = descriptionEmbedding };
