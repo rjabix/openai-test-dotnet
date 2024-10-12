@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using OpenAI;
 using OpenAI.Chat;
 using Pgvector;
+using Pgvector.EntityFrameworkCore;
 using test_dotnet.Context;
 using test_dotnet.Models;
 using test_dotnet.Services;
@@ -28,7 +29,7 @@ public class AIController : ControllerBase
     public async Task<IActionResult> Get([FromBody] ChatRequest request)
     {
         ChatCompletionOptions options = new();
-        options.MaxOutputTokenCount = 2;
+        options.MaxOutputTokenCount = 10;
         ChatMessage message = new UserChatMessage(request.Prompt);
         ChatCompletion completion = client.CompleteChat([message], options);
 
@@ -42,28 +43,21 @@ public class AIController : ControllerBase
         public required string Prompt { get; set; }
     }
 
-    [HttpPost("CreateJob")]
-    public async Task<IActionResult> CreateJob([FromBody] JobRequest jobrequest)
-    {
-        Job job = await Job.CreateJobAsync(_embeddingService, jobrequest.Title, jobrequest.Description);
-        _context.Jobs.Add(job);
-        await _context.SaveChangesAsync();
-        return Ok(job);
-    }
-
-    public class JobRequest
-    {
-        public required string Title { get; set; }
-        public required string Description { get; set; }
-    }
-
     [HttpPost("SearchJobs")]
     public async Task<IActionResult> SearchJobs([FromBody] ChatRequest searchRequest) // currently using ChatRequest as it also has 1 string field
     {
         Vector queryEmbedding = await _embeddingService.GetEmbeddingAsync(searchRequest.Prompt);
         List<Job> jobs = await _context.SearchAsync(queryEmbedding, 0);
-        var results = jobs.Select(job => new { job.Title, job.Description });
-        return Ok(results);
+
+        var jobs_results = jobs.Select(job => new { job.Title, job.Description });
+
+        Dictionary<Job, int> job_suitability = [];
+        foreach (var job in jobs)
+        {
+            //job_suitability.Add(job, (int)job.DescriptionEmbedding!.L2Distance(queryEmbedding));
+        }
+
+        return Ok(jobs_results);
     }
 
 }
